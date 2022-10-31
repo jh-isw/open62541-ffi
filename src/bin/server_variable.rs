@@ -48,12 +48,12 @@ fn main() -> Result<()> {
 
     unsafe {
         attr.description = open62541::UA_LocalizedText {
-            locale: open62541::UA_String_fromChars(b"en-US\0" as *const u8 as *const i8),
-            text: open62541::UA_String_fromChars(b"the answer\0" as *const u8 as *const i8),
+            locale: open62541::UA_String_fromChars(b"en-US\0" as *const u8),
+            text: open62541::UA_String_fromChars(b"the answer\0" as *const u8),
         };
         attr.displayName = open62541::UA_LocalizedText {
-            locale: open62541::UA_String_fromChars(b"en-US\0" as *const u8 as *const i8),
-            text: open62541::UA_String_fromChars(b"the answer\0" as *const u8 as *const i8),
+            locale: open62541::UA_String_fromChars(b"en-US\0" as *const u8),
+            text: open62541::UA_String_fromChars(b"the answer\0" as *const u8),
         };
     }
 
@@ -62,13 +62,13 @@ fn main() -> Result<()> {
         identifierType: open62541::UA_NodeIdType_UA_NODEIDTYPE_STRING,
         identifier: open62541::UA_NodeId__bindgen_ty_1 {
             string: unsafe {
-                open62541::UA_String_fromChars(b"the.answer\0" as *const u8 as *const i8)
+                open62541::UA_String_fromChars(b"the.answer\0" as *const u8)
             },
         },
     };
     let my_integer_name = open62541::UA_QualifiedName {
         namespaceIndex: 1,
-        name: unsafe { open62541::UA_String_fromChars(b"the answer\0" as *const u8 as *const i8) },
+        name: unsafe { open62541::UA_String_fromChars(b"the answer\0" as *const u8) },
     };
 
     let parent_node_id = open62541::UA_NodeId {
