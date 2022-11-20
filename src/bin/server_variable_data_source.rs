@@ -80,14 +80,11 @@ fn main() -> Result<()> {
         ));
     }
 
-    
-
-    
     let running = Arc::<AtomicBool>::as_ptr(&running).cast();
 
     let mut attr = unsafe { open62541::UA_VariableAttributes_default };
     let my_integer = 42;
-    let my_type = unsafe { &open62541::UA_TYPES[open62541::UA_TYPES_INT32 as usize] };
+    let my_type = unsafe { &open62541::UA_TYPES[open62541::UA_TYPES_INT32 as usize] };   
 
     let retval = unsafe {
         open62541::UA_Variant_setScalarCopy(
@@ -120,23 +117,38 @@ fn main() -> Result<()> {
             },
         },
     };
+
     let my_integer_name = open62541::UA_QualifiedName {
         namespaceIndex: 1,
         name: unsafe { open62541::UA_String_fromChars(b"the answer\0".as_ptr() as *const _) },
     };
+
+    let mut attr_2 = unsafe { open62541::UA_VariableAttributes_default };
+
+    unsafe {
+        attr_2.description = open62541::UA_LocalizedText {
+            locale: open62541::UA_String_fromChars(b"en-US\0".as_ptr() as *const _),
+            text: open62541::UA_String_fromChars(b"incrementing integer\0".as_ptr() as *const _),
+        };
+        attr_2.displayName = open62541::UA_LocalizedText {
+            locale: open62541::UA_String_fromChars(b"en-US\0".as_ptr() as *const _),
+            text: open62541::UA_String_fromChars(b"incrementing integer\0".as_ptr() as *const _),
+        };
+    }
 
     let my_integer_node_id_2 = open62541::UA_NodeId {
         namespaceIndex: 1,
         identifierType: open62541::UA_NodeIdType_UA_NODEIDTYPE_STRING,
         identifier: open62541::UA_NodeId__bindgen_ty_1 {
             string: unsafe {
-                open62541::UA_String_fromChars(b"the.other.answer\0".as_ptr() as *const _)
+                open62541::UA_String_fromChars(b"incrementing.integer\0".as_ptr() as *const _)
             },
         },
     };
+
     let my_integer_name_2 = open62541::UA_QualifiedName {
         namespaceIndex: 1,
-        name: unsafe { open62541::UA_String_fromChars(b"the other answer\0".as_ptr() as *const _) },
+        name: unsafe { open62541::UA_String_fromChars(b"incrementing integer\0".as_ptr() as *const _) },
     };
 
     let parent_node_id = open62541::UA_NodeId {
@@ -170,6 +182,7 @@ fn main() -> Result<()> {
             std::ptr::null_mut(),
         )
     };
+
     if retval != 0 {
         return Err(anyhow!("__UA_Server_addNode returned {}", retval));
     }
@@ -195,11 +208,12 @@ fn main() -> Result<()> {
             parent_reference_node_id as open62541::UA_NodeId,
             my_integer_name_2,
             variable_type_node_id as open62541::UA_NodeId,
-            attr as open62541::UA_VariableAttributes,
+            attr_2 as open62541::UA_VariableAttributes,
             my_data_source,
             std::ptr::null_mut(),
             std::ptr::null_mut(),
     )};
+
     if retval_2 != 0 {
         println!("retval_2 returned {}", retval_2);
     }
@@ -228,6 +242,7 @@ fn main() -> Result<()> {
     }
 
     let retval = unsafe { open62541::UA_Server_run(server, running) };
+
     if retval != 0 {
         return Err(anyhow!("UA_Server_run returned {}", retval));
     }
