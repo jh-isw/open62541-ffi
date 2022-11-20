@@ -6,11 +6,17 @@ use open62541::{UA_Server, UA_NodeId, UA_NumericRange, UA_DataValue, UA_StatusCo
 
 use signal_hook::iterator::Signals;
 use std::{
-    sync::{atomic::AtomicBool, Arc},
+    sync::{atomic::AtomicBool, atomic::AtomicI32, Arc, atomic::Ordering},
     thread,
+    time::Duration
 };
 
-static mut SOME_INT: i32 = 1;
+#[macro_use]
+extern crate lazy_static;
+
+lazy_static!{
+    static ref MY_INT : Arc<AtomicI32> = Arc::new(AtomicI32::new(0 as i32));
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn read_data_source (_server: *mut UA_Server,
@@ -18,8 +24,7 @@ pub unsafe extern "C" fn read_data_source (_server: *mut UA_Server,
         _node_id: *const UA_NodeId, _node_context: *mut c_void,
         _source_timestamp: bool, _range: *const UA_NumericRange, data_value: *mut UA_DataValue)
         -> UA_StatusCode {
-    //SOME_INT += 1;
-    let my_integer = SOME_INT;
+    let my_integer = MY_INT.load(Ordering::Relaxed);
     
     let my_type = &open62541::UA_TYPES[open62541::UA_TYPES_INT32 as usize];
 
@@ -44,6 +49,25 @@ pub unsafe extern "C" fn write_data_source (_server: *mut UA_Server,
 }
 
 fn main() -> Result<()> {
+    let mut signals = Signals::new(&[signal_hook::consts::SIGINT, signal_hook::consts::SIGTERM])?;
+
+    let running = Arc::new(AtomicBool::new(true));
+    let running_clone = running.clone();
+    thread::spawn(move || {
+        if let Some(_) = signals.into_iter().next() {
+            running_clone.store(false, std::sync::atomic::Ordering::Relaxed);
+        }
+    });
+
+    let my_int_clone : Arc<AtomicI32> = MY_INT.clone();
+    let r_2 = running.clone();
+    thread::spawn(move || {
+        while r_2.load(Ordering::SeqCst) {
+            my_int_clone.fetch_add(1, Ordering::Relaxed);
+            thread::sleep(Duration::from_millis(1000));
+        }
+    });
+
     let server = unsafe { open62541::UA_Server_new() };
     let config = unsafe { open62541::UA_Server_getConfig(server) };
     let retval = unsafe {
@@ -56,15 +80,9 @@ fn main() -> Result<()> {
         ));
     }
 
-    let mut signals = Signals::new(&[signal_hook::consts::SIGINT, signal_hook::consts::SIGTERM])?;
+    
 
-    let running = Arc::new(AtomicBool::new(true));
-    let running_clone = running.clone();
-    thread::spawn(move || {
-        if let Some(_) = signals.into_iter().next() {
-            running_clone.store(false, std::sync::atomic::Ordering::Relaxed);
-        }
-    });
+    
     let running = Arc::<AtomicBool>::as_ptr(&running).cast();
 
     let mut attr = unsafe { open62541::UA_VariableAttributes_default };
@@ -84,12 +102,12 @@ fn main() -> Result<()> {
 
     unsafe {
         attr.description = open62541::UA_LocalizedText {
-            locale: open62541::UA_String_fromChars(b"en-US\0" as *const u8),
-            text: open62541::UA_String_fromChars(b"the answer\0" as *const u8),
+            locale: open62541::UA_String_fromChars(b"en-US\0".as_ptr() as *const _),
+            text: open62541::UA_String_fromChars(b"the answer\0".as_ptr() as *const _),
         };
         attr.displayName = open62541::UA_LocalizedText {
-            locale: open62541::UA_String_fromChars(b"en-US\0" as *const u8),
-            text: open62541::UA_String_fromChars(b"the answer\0" as *const u8),
+            locale: open62541::UA_String_fromChars(b"en-US\0".as_ptr() as *const _),
+            text: open62541::UA_String_fromChars(b"the answer\0".as_ptr() as *const _),
         };
     }
 
@@ -98,13 +116,13 @@ fn main() -> Result<()> {
         identifierType: open62541::UA_NodeIdType_UA_NODEIDTYPE_STRING,
         identifier: open62541::UA_NodeId__bindgen_ty_1 {
             string: unsafe {
-                open62541::UA_String_fromChars(b"the.answer\0" as *const u8)
+                open62541::UA_String_fromChars(b"the.answer\0".as_ptr() as *const _)
             },
         },
     };
     let my_integer_name = open62541::UA_QualifiedName {
         namespaceIndex: 1,
-        name: unsafe { open62541::UA_String_fromChars(b"the answer\0" as *const u8) },
+        name: unsafe { open62541::UA_String_fromChars(b"the answer\0".as_ptr() as *const _) },
     };
 
     let my_integer_node_id_2 = open62541::UA_NodeId {
@@ -112,13 +130,13 @@ fn main() -> Result<()> {
         identifierType: open62541::UA_NodeIdType_UA_NODEIDTYPE_STRING,
         identifier: open62541::UA_NodeId__bindgen_ty_1 {
             string: unsafe {
-                open62541::UA_String_fromChars(b"the.other.answer\0" as *const u8)
+                open62541::UA_String_fromChars(b"the.other.answer\0".as_ptr() as *const _)
             },
         },
     };
     let my_integer_name_2 = open62541::UA_QualifiedName {
         namespaceIndex: 1,
-        name: unsafe { open62541::UA_String_fromChars(b"the other answer\0" as *const u8) },
+        name: unsafe { open62541::UA_String_fromChars(b"the other answer\0".as_ptr() as *const _) },
     };
 
     let parent_node_id = open62541::UA_NodeId {
